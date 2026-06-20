@@ -13,7 +13,6 @@
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
-  <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
   <style>
     /* ── TOKENS ─────────────────────────────────── */
@@ -35,7 +34,7 @@
       --fb:     'Inter', sans-serif;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: auto; }
+    html { scroll-behavior: smooth; }
     body {
       background: var(--bg); color: var(--text);
       font-family: var(--fb); font-size: 16px; line-height: 1.6;
@@ -485,14 +484,14 @@
       body { cursor: auto; }
       button { cursor: pointer; }
 
-      /* center nav on mobile */
-      nav { justify-content: center; gap: 24px; flex-wrap: wrap; padding: 16px 20px; }
-      .nav-brand { margin-right: auto; }
-      .nav-ctas { margin-left: auto; }
-
-      nav { padding: 20px 28px; }
-      nav.stuck { padding: 14px 28px; }
+      nav { justify-content: space-between; flex-wrap: nowrap; padding: 14px 20px; gap: 0; }
+      nav.stuck { padding: 10px 20px; }
+      .nav-brand { flex-shrink: 0; }
+      .nav-right { flex-shrink: 0; gap: 8px; }
       .nav-links { display: none; }
+      .n-ghost { padding: 8px 14px; font-size: 12px; }
+      .n-solid { padding: 8px 14px; font-size: 12px; }
+      .nav-logo-img { width: 40px !important; height: 40px !important; }
       .s { padding: 0 28px; }
 
       /* hero stats becomes relative flow — add bottom padding to compensate */
@@ -509,6 +508,10 @@
       .wc { margin-bottom: 0; }
       .wc.big { grid-row: auto; }
       .wc.big .wc-inner { min-height: 340px; }
+      .wc-preview iframe {
+        width: 1440px !important;
+        height: 900px !important;
+      }
       .about-grid { grid-template-columns: 1fr; gap: 52px; }
       .about-visual { max-width: 320px; }
       .contact-grid { grid-template-columns: 1fr; gap: 56px; }
@@ -900,6 +903,7 @@
     initTestimonials();
     initReveal();
     initNav();
+    initSmoothAnchors();
 
     /* Safety net: force-show hero + any unrevealed sections if GSAP
        never loaded/ran (slow connection) or anything above threw. */
@@ -918,13 +922,7 @@
   function initGSAP() {
     gsap.registerPlugin(ScrollTrigger);
 
-    /* Lenis */
-    if (typeof Lenis !== 'undefined' && !window.matchMedia('(hover: none)').matches) {
-      const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
-      gsap.ticker.add(t => lenis.raf(t * 1000));
-      gsap.ticker.lagSmoothing(0);
-      lenis.on('scroll', ScrollTrigger.update);
-    }
+
 
 
     /* hero entrance */
@@ -1262,25 +1260,25 @@
       document.querySelectorAll('.wc-preview').forEach(preview => {
         const card = preview.closest('.wc');
         const w = card.offsetWidth;
-        const h = card.offsetHeight || 280;
+        const h = card.offsetHeight || 300;
         const scaleW = w / 1440;
         const scaleH = h / 900;
         const scale = Math.max(scaleW, scaleH);
         const iframe = preview.querySelector('iframe');
-        if (iframe) {
-          iframe.style.transform = `scale(${scale})`;
-          // Center horizontally if needed
-          const scaledW = 1440 * scale;
-          const scaledH = 900 * scale;
-          const offsetX = (scaledW - w) / 2 / scale * -1;
-          const offsetY = 0;
-          iframe.style.transformOrigin = 'top left';
-          iframe.style.marginLeft = offsetX + 'px';
-        }
+        if (!iframe) return;
+        const scaledW = 1440 * scale;
+        const offsetX = -((scaledW - w) / 2 / scale);
+        iframe.style.transformOrigin = 'top left';
+        iframe.style.transform = `scale(${scale})`;
+        iframe.style.marginLeft = offsetX + 'px';
+        iframe.style.marginTop = '0px';
       });
     }
     scaleCards();
     window.addEventListener('resize', scaleCards, { passive: true });
+    // Re-run after fonts/images settle
+    setTimeout(scaleCards, 600);
+    setTimeout(scaleCards, 1500);
   }
 
   /* ── FORM ───────────────────────────────────── */
@@ -1296,6 +1294,22 @@
       e.target.reset();
     }, 4000);
   };
+
+  /* ── SMOOTH ANCHOR SCROLL ──────────────────── */
+  function initSmoothAnchors() {
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (!href || href === '#') return;
+        const target = document.querySelector(href);
+        if (!target) return;
+        e.preventDefault();
+        const offset = 80; // nav height
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      });
+    });
+  }
 
 })();
 </script>
